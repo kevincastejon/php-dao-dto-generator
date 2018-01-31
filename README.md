@@ -14,7 +14,7 @@ Parameters:
     * R : Generates a static selectAll method (READ)
     * U : Generates an static update method (UPDATE)
     * D : Generates a static delete method (DELETE)
-    * + : Generates a static selectOne method (READ+)
+    *  + : Generates a static selectOne method (READ+)
     * O : Generates a DTO interface method (constructor, properties, getters and setters)
     * J : Generates a toJSONString method (JSON)
     * A : Generates a toArray method (associative array)
