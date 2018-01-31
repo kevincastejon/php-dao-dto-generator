@@ -19,3 +19,8 @@ Parameters:
     * J : Generates a toJSONString method (JSON)
     * A : Generates a toArray method (associative array)
     * S : Generates a toString method (string)
+    * 1 : The insert method will get DTO as parameter instead of values
+    * 2 : The selectAll method will return a DTO instead of associative array
+    * 3 : The update method will get DTO as parameter instead of values
+    * 4 : The delete method will get DTO as parameter instead of values
+    * 5 : The selectOne method will return a DTO instead of values
