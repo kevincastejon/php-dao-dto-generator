@@ -2,7 +2,7 @@
 
 class DAODTOGenerator {
 
-    public static function generate($pdo, $dbName, $tableName, $options = "CRUD+OJAS12345", $activeRecord = false) {
+    public static function generate($pdo, $dbName, $tableName, $options = "CRUD+OJAS12345", $activeRecord = true) {
         $tableListRequest = 'SELECT COLUMN_NAME, COLUMN_KEY, EXTRA FROM information_schema.COLUMNS WHERE information_schema.COLUMNS.TABLE_SCHEMA = "' . $dbName . '" AND information_schema.COLUMNS.TABLE_NAME = "' . $tableName . '"';
         $result = $pdo->query($tableListRequest);
         $result->setFetchMode(PDO::FETCH_ASSOC);
@@ -159,7 +159,7 @@ class DAODTOGenerator {
             $dao .= DAODTOGenerator::tab(2) . '}' . DAODTOGenerator::lineBreak();
             $dao .= DAODTOGenerator::tab(1) . '}' . DAODTOGenerator::lineBreak(2);
         }
-        if ($activeRecord) {
+        if (!$activeRecord) {
             if ((strstr($options,"C") || strstr($options,"R") || strstr($options,"U") || strstr($options,"D") || strstr($options,"+")) && strstr($options, "O")){
                 return([$classStart."class " . DAODTOGenerator::underscoreToCamelCase($tableName, true) . "DAO {" . DAODTOGenerator::lineBreak(2).$dao."}" . DAODTOGenerator::lineBreak(2)."?>",$classStart."class " . DAODTOGenerator::underscoreToCamelCase($tableName, true) . "DTO {" . DAODTOGenerator::lineBreak(2).$dto."}" . DAODTOGenerator::lineBreak(2)."?>"]);
             } else if(strstr($options, "O")){

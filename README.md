@@ -3,7 +3,7 @@
 ### Basic usage:<br>
 Only one static method :<br>
 <br>
-DAODTOGenerator::generate($pdo, $dbName, $tableName, $options = "CRUD+OJAS12345")
+DAODTOGenerator::generate($pdo, $dbName, $tableName, $options = "CRUD+OJAS12345", $activeRecord=true)
 
 Parameters: 
 - $pdo : A connected PDO object
