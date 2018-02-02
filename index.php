@@ -9,28 +9,28 @@ if ($requestType) {
     $tableName = filter_input(INPUT_POST, "tableName");
     $tables = json_decode(filter_input(INPUT_POST, "tables"));
     $options = filter_input(INPUT_POST, "options");
-    $separateFiles = filter_input(INPUT_POST, "separateFiles");
+    $activeRecord = filter_input(INPUT_POST, "separateFiles");
 }
 if ($requestType == "connection") {
     echo json_encode(getBases($pdo));
 } else if ($requestType == "dbSelection") {
     echo json_encode(getTables($pdo, $dbName));
 } else if ($requestType == "preview") {
-    require_once 'DAOGenerator.php';
-    $pvw = DAOGenerator::generate($pdo, $dbName, $tableName, $options, $separateFiles);
+    require_once 'DAODTOGenerator.php';
+    $pvw = DAODTOGenerator::generate($pdo, $dbName, $tableName, $options, $activeRecord);
     if (gettype($pvw) == "array") {
         echo json_encode($pvw);
     } else {
         echo $pvw;
     }
 } else if ($requestType == "generate") {
-    require_once 'DAOGenerator.php';
+    require_once 'DAODTOGenerator.php';
     if (file_exists("generatedFiles.zip")) {
         unlink("generatedFiles.zip");
     }
     $max = count($tables);
     for ($i = 0; $i < $max; $i++) {
-        $gf = DAOGenerator::generate($pdo, $dbName, $tables[$i], $options, $separateFiles);
+        $gf = DAODTOGenerator::generate($pdo, $dbName, $tables[$i], $options, $activeRecord);
         $fileName;
         if (strstr($gf, "DAO")) {
             $fileName = underscoreToCamelCase($tables[$i], true) . "DAO.php";
@@ -43,13 +43,13 @@ if ($requestType == "connection") {
     }
     echo 1;
 } else if ($requestType == "dl") {
-    require_once 'DAOGenerator.php';
+    require_once 'DAODTOGenerator.php';
     if (file_exists("generatedFiles.zip")) {
         unlink("generatedFiles.zip");
     }
     $max = count($tables);
     for ($i = 0; $i < $max; $i++) {
-        $gf = DAOGenerator::generate($pdo, $dbName, $tables[$i], $options, $separateFiles);
+        $gf = DAODTOGenerator::generate($pdo, $dbName, $tables[$i], $options, $activeRecord);
         $fileName;
         if (strstr($gf, "DAO")) {
             $fileName = underscoreToCamelCase($tables[$i], true) . "DAO.php";
