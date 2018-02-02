@@ -326,9 +326,9 @@ if ($requestType == "connection") {
                     formData.append('dbName', dbStr);
                     formData.append('tables', JSON.stringify(tables));
                     formData.append('options', getOptionString());
-                    var boolToInt = 1;
+                    var boolToInt = 0;
                     if (enableAR.checked)
-                        boolToInt = 0;
+                        boolToInt = 1;
                     formData.append('separateFiles', boolToInt);
                     xhr.send(formData);
                 });
@@ -357,9 +357,9 @@ if ($requestType == "connection") {
                     formData.append('dbName', dbStr);
                     formData.append('tables', JSON.stringify(tables));
                     formData.append('options', getOptionString());
-                    var boolToInt = 1;
+                    var boolToInt = 0;
                     if (enableAR.checked)
-                        boolToInt = 0;
+                        boolToInt = 1;
                     formData.append('separateFiles', boolToInt);
                     xhr.send(formData);
                 });
@@ -421,9 +421,9 @@ if ($requestType == "connection") {
                     formData.append('dbName', dbStr);
                     formData.append('tableName', tables[0]);
                     formData.append('options', getOptionString());
-                    var boolToInt = 1;
+                    var boolToInt = 0;
                     if (enableAR.checked)
-                        boolToInt = 0;
+                        boolToInt = 1;
                     formData.append('separateFiles', boolToInt);
                     xhr.send(formData);
                 }
