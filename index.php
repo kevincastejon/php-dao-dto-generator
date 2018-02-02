@@ -1,361 +1,468 @@
 <?php
-$typeForm = filter_input(INPUT_POST, "typeForm");
-$host = filter_input(INPUT_POST, "host");
-$login = filter_input(INPUT_POST, "login");
-$pwd = filter_input(INPUT_POST, "pwd");
-$selectedDb = filter_input(INPUT_POST, "selectedDb");
-$selectedTables = filter_input(INPUT_POST, "selectedTables", FILTER_DEFAULT, FILTER_REQUIRE_ARRAY);
-$generateDAOBtn = filter_input(INPUT_POST, "generateDAOBtn");
-$dlDAOBtn = filter_input(INPUT_POST, "dlDAOBtn");
-$previewDAOBtn = filter_input(INPUT_POST, "previewDAOBtn");
-$CRUD_C = filter_input(INPUT_POST, "CRUD_C");
-$CRUD_R = filter_input(INPUT_POST, "CRUD_R");
-$CRUD_U = filter_input(INPUT_POST, "CRUD_U");
-$CRUD_D = filter_input(INPUT_POST, "CRUD_D");
-$CRUD_PLUS = filter_input(INPUT_POST, "CRUD_+");
-$CRUD_CDTO = filter_input(INPUT_POST, "CRUD_CDTO");
-$CRUD_RDTO = filter_input(INPUT_POST, "CRUD_RDTO");
-$CRUD_UDTO = filter_input(INPUT_POST, "CRUD_UDTO");
-$CRUD_DDTO = filter_input(INPUT_POST, "CRUD_DDTO");
-$CRUD_PLUSDTO = filter_input(INPUT_POST, "CRUD_+DTO");
-$CRUD_CDTO_OFF = filter_input(INPUT_POST, "CRUD_C_OFF");
-$CRUD_RDTO_OFF = filter_input(INPUT_POST, "CRUD_R_OFF");
-$CRUD_UDTO_OFF = filter_input(INPUT_POST, "CRUD_U_OFF");
-$CRUD_DDTO_OFF = filter_input(INPUT_POST, "CRUD_D_OFF");
-$CRUD_PLUSDTO_OFF = filter_input(INPUT_POST, "CRUD_+_OFF");
-$CRUD_C_OFF = filter_input(INPUT_POST, "CRUD_C_OFF");
-$CRUD_R_OFF = filter_input(INPUT_POST, "CRUD_R_OFF");
-$CRUD_U_OFF = filter_input(INPUT_POST, "CRUD_U_OFF");
-$CRUD_D_OFF = filter_input(INPUT_POST, "CRUD_D_OFF");
-$CRUD_PLUS_OFF = filter_input(INPUT_POST, "CRUD_+_OFF");
-$OJAS_O = filter_input(INPUT_POST, "OJAS_O");
-$OJAS_J = filter_input(INPUT_POST, "OJAS_J");
-$OJAS_A = filter_input(INPUT_POST, "OJAS_A");
-$OJAS_S = filter_input(INPUT_POST, "OJAS_S");
-$OJAS_O_OFF = filter_input(INPUT_POST, "OJAS_O_OFF");
-$OJAS_J_OFF = filter_input(INPUT_POST, "OJAS_J_OFF");
-$OJAS_A_OFF = filter_input(INPUT_POST, "OJAS_A_OFF");
-$OJAS_S_OFF = filter_input(INPUT_POST, "OJAS_S_OFF");
-try {
-
-    $pdo = new PDO("mysql:host=" . $host, $login, $pwd);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->exec("SET NAMES 'UTF8'");
-} catch (PDOException $e) {
-    echo($e->getMessage());
+$requestType = filter_input(INPUT_POST, "requestType");
+if ($requestType) {
+    $host = filter_input(INPUT_POST, "host");
+    $login = filter_input(INPUT_POST, "login");
+    $pwd = filter_input(INPUT_POST, "pwd");
+    $pdo = connect($host, $login, $pwd);
+    $dbName = filter_input(INPUT_POST, "dbName");
+    $tableName = filter_input(INPUT_POST, "tableName");
+    $tables = json_decode(filter_input(INPUT_POST, "tables"));
+    $options = filter_input(INPUT_POST, "options");
+    $separateFiles = filter_input(INPUT_POST, "separateFiles");
 }
-if ($typeForm == "tableSelectForm") {
+if ($requestType == "connection") {
+    echo json_encode(getBases($pdo));
+} else if ($requestType == "dbSelection") {
+    echo json_encode(getTables($pdo, $dbName));
+} else if ($requestType == "preview") {
     require_once 'DAOGenerator.php';
-    $opts = $CRUD_C . $CRUD_R . $CRUD_U . $CRUD_D . $CRUD_PLUS . $OJAS_O . $OJAS_J . $OJAS_A . $OJAS_S . $CRUD_CDTO . $CRUD_RDTO . $CRUD_UDTO . $CRUD_DDTO . $CRUD_PLUSDTO;
-
-    if (file_exists("temp.zip")) {
-        unlink("temp.zip");
+    $pvw = DAOGenerator::generate($pdo, $dbName, $tableName, $options, $separateFiles);
+    if (gettype($pvw) == "array") {
+        echo json_encode($pvw);
+    } else {
+        echo $pvw;
     }
-    for ($i = 0; $i < count($selectedTables); $i++) {
-        if ($generateDAOBtn) {
-            generateDAOFile(underscoreToCamelCase($selectedTables[$i], true) . ".php", DAOGenerator::generateDAO($pdo, $selectedDb, $selectedTables[$i], $opts));
-        } else if ($dlDAOBtn) {
-            zip(ucwords($selectedTables[$i]) . ".php", DAOGenerator::generateDAO($pdo, $selectedDb, $selectedTables[$i], $opts));
-            $file_url = 'temp.zip';
-            header('Content-Type: application/octet-stream');
-            header("Content-Transfer-Encoding: Binary");
-            header("Content-disposition: attachment; filename=\"" . $file_url . "\"");
-            readfile($file_url);
-        }
+} else if ($requestType == "generate") {
+    require_once 'DAOGenerator.php';
+    if (file_exists("generatedFiles.zip")) {
+        unlink("generatedFiles.zip");
     }
-}
-?>
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>DAO Generator</title>
-        <style>
-            html{
-                text-align: center;
-            }
-            body{
-                margin:auto;
-                border:0px solid red;
-            }
-            .bordered{
-                border-top:1px solid black;
-                margin:auto;
-
-                padding: 25px 25px;
-            }
-            .inlined{
-                padding: 15px 15px;
-                border:0px solid red;
-                display: inline-block;
-                text-align: left;
-            }
-            textarea{
-                width: 90%;
-                height:500px;
-            }
-            .descLabel{
-                border:0px solid red;
-                display: inline-block;
-                width: 900px;
-            }
-            .descCrudLabel{
-                display: inline-block;
-                width: 70px;
-            }
-            #tableSelectForm h5{
-                display: inline-block;
-            }
-        </style>
-    </head>
-    <body>
-        <h1>PHP DAO Generator for MySQL</h1>
-        <div class="bordered">
-            <h3>MySQL connection</h3>
-            <form method="post" action="#dbForm">
-                <label>Host :</label> <input type="text" id="host" name="host" value="localhost" required><br>
-                <label>Login :</label> <input type="text" id="login" name="login" value="root" required><br>
-                <label>Password :</label> <input type="password" id="pwd" name="pwd" value=""><br>
-                <button id="connectBtn">Connect</button>
-                <input type="hidden" name="typeForm" value="connectForm"></input>
-            </form>
-        </div>
-        <?php
-        if ($typeForm != "") {
-
-            $dbList = getBases($pdo);
-            ?>
-
-            <div class="bordered" id="dbForm">
-                <h3>Select a database</h3>
-                <form method="post" action="#tableSelectForm">
-                    <select name="selectedDb"  required>
-                        <?php
-                        //Génération dynamique d'éléments OPTION
-                        foreach ($dbList as $val) {
-                            echo "<option value='" . $val . "' ";
-                            if ($selectedDb AND $selectedDb === $val) {
-                                echo 'selected';
-                            }
-                            echo ">" . $val . "</option>";
-                        }
-                        ?>
-                    </select>
-                    <button id="dbSelectBtn">Select</button>
-                    <input type="hidden" name="host" value="<?php echo $host; ?>"></input>
-                    <input type="hidden" name="login" value="<?php echo $login; ?>"></input>
-                    <input type="hidden" name="pwd" value="<?php echo $pwd; ?>"></input>
-                    <input type="hidden" name="typeForm" value="dbSelectForm"></input>
-                </form>
-            </div>
-            <?php
-        }if ($selectedDb) {
-            $tableList = getTables($pdo, $selectedDb);
-            ?>
-            <div class="bordered" id="tableSelectForm">
-                <h3>Select tables and options for the DAO file generation</h3>
-                <form method="post" action="#tableSelectForm">
-                    <h4>Tables</h4>
-                    <div class="inlined">
-                        <select name="selectedTables[]" multiple size="11" required>
-                            <?php
-                            foreach ($tableList as $val) {
-                                //Génération dynamique d'éléments OPTION
-                                echo "<option ondblclick='dbSel.submit();' value='" . $val . "' ";
-                                if ($selectedTables AND in_array($val, $selectedTables)) {
-                                    echo 'selected';
-                                }
-                                echo ">" . $val . "</option>";
-                            }
-                            ?>
-                        </select></div><br><h4>Options</h4><div class="inlined">
-                        <h5>DAO</h5><br>
-                        <input type="checkbox" <?php
-                        if (!($CRUD_C == null && $CRUD_C_OFF)) {
-                            echo "checked";
-                        }
-                        ?> name="CRUD_C" value="C" id="CRUDC"><label class="descCrudLabel">Create</label><label class="descLabel"><?php if (!(($OJAS_O == null && $CRUD_CDTO_OFF) || ($CRUD_CDTO_OFF && $CRUD_CDTO == null))) {
-                               echo "insert(\$pdo, \$dto) static method that inserts a new line in table from a DTO instance non-ai columns values";
-                           } else {
-                               echo "insert(\$pdo, \$nonAIparams, ...) static method that inserts a new line in table from non-ai columns values";
-                           } ?></label><input type="checkbox" <?php
-                               if (!($CRUD_CDTO == null && $CRUD_CDTO_OFF)) {
-                                   echo "checked";
-                               }
-                                if($OJAS_O == null && $CRUD_CDTO_OFF){
-                                    echo " disabled";
-                                }
-                               
-                               ?> name="CRUD_CDTO" value="1" id="CDTO"><label>receive DTO instance for argument</label><br>
-                        <input type="checkbox" <?php
-                               if (!($CRUD_R == null && $CRUD_R_OFF)) {
-                                   echo "checked";
-                               }
-                               ?> name="CRUD_R" value="R" id="CRUDR"><label class="descCrudLabel">Read</label><label class="descLabel"><?php if (!(($OJAS_O == null && $CRUD_RDTO_OFF) || ($CRUD_RDTO_OFF && $CRUD_RDTO == null))) {
-                        echo "selectAll(\$pdo) static method that selects all columns from all lines in table and returns an array of DTO instances";
-                    } else {
-                        echo "selectAll(\$pdo) static method that selects all columns from all lines in table and returns an array of associatives arrays";
-                    } ?></label><input type="checkbox" <?php
-                               if (!($CRUD_RDTO == null && $CRUD_RDTO_OFF)) {
-                                   echo "checked";
-                               }
-                               if($OJAS_O == null && $CRUD_RDTO_OFF){
-                                    echo " disabled";
-                                }
-                               ?> name="CRUD_RDTO" value="2" id="RDTO"><label>return DTO instances array</label><br>
-                        <input type="checkbox" <?php
-                                           if (!($CRUD_U == null && $CRUD_U_OFF)) {
-                                               echo "checked";
-                                           }
-                                           ?> name="CRUD_U" value="U" id="CRUDU"><label class="descCrudLabel">Update</label><label class="descLabel"><?php if (!(($OJAS_O == null && $CRUD_UDTO_OFF) || ($CRUD_UDTO_OFF && $CRUD_UDTO == null))) {
-                        echo "update(\$pdo, \$dto) static method that updates non-ai values of a line in table from a DTO instance primary columns values";
-                    } else {
-                        echo "update(\$pdo, \$primaryParams, ...) static method that updates non-ai values of a line in table from primary columns values";
-                    } ?></label><input type="checkbox" <?php
-                        if (!($CRUD_UDTO == null && $CRUD_UDTO_OFF)) {
-                            echo "checked";
-                        }
-                        if($OJAS_O == null && $CRUD_UDTO_OFF){
-                            echo " disabled";
-                        }
-                        ?> name="CRUD_UDTO" value="3" id="UDTO"><label>receive DTO instance for argument</label><br>
-                        <input type="checkbox" <?php
-                        if (!($CRUD_D == null && $CRUD_D_OFF)) {
-                            echo "checked";
-                        }
-                        ?> name="CRUD_D" value="D" id="CRUDD"><label class="descCrudLabel">Delete</label><label class="descLabel"><?php if (!(($OJAS_O == null && $CRUD_DDTO_OFF) || ($CRUD_DDTO_OFF && $CRUD_DDTO == null))) {
-                            echo "delete(\$pdo, \$dto) static method that deletes a line in table from a DTO instance primary columns values";
-                        } else {
-                            echo "delete(\$pdo, \$primaryParams, ...) static method that deletes a line in table from primary columns values";
-                        } ?></label><input type="checkbox" <?php
-                        if (!($CRUD_DDTO == null && $CRUD_DDTO_OFF)) {
-                            echo "checked";
-                        }
-                        if($OJAS_O == null && $CRUD_DDTO_OFF){
-                                    echo " disabled";
-                                }
-                        ?> name="CRUD_DDTO" value="4" id="DDTO"><label>receive DTO instance for argument</label><br>
-                        <input type="checkbox" <?php
-                        if (!($CRUD_PLUS == null && $CRUD_PLUS_OFF)) {
-                            echo "checked";
-                        }
-                        ?> name="CRUD_+" value="+" id="CRUDPLUS"><label class="descCrudLabel">ReadOne</label><label class="descLabel"><?php if (!(($OJAS_O == null && $CRUD_PLUSDTO_OFF) || ($CRUD_PLUSDTO_OFF && $CRUD_PLUSDTO == null))) {
-                            echo "selectOne(\$pdo, \$primaryValues, ...) static method that selects a line in table from primary columns values and returns a DTO instance";
-                        } else {
-                            echo "selectOne(\$pdo, \$primaryValues, ...) static method that selects a line in table from primary columns values and returns an associative array";
-                        } ?></label><input type="checkbox" <?php
-                        if (!($CRUD_PLUSDTO == null && $CRUD_PLUSDTO_OFF)) {
-                            echo "checked";
-                        }
-                        if($OJAS_O == null && $CRUD_PLUSDTO_OFF){
-                                    echo " disabled";
-                                }
-                        ?> name="CRUD_+DTO" value="5" id="PLUSDTO"><label>return DTO instance</label><br><br>
-                        <h5>DTO</h5><input type="checkbox" <?php
-        if (!($OJAS_O == null && $OJAS_O_OFF)) {
-            echo "checked";
+    $max = count($tables);
+    for ($i = 0; $i < $max; $i++) {
+        $gf = DAOGenerator::generate($pdo, $dbName, $tables[$i], $options, $separateFiles);
+        $fileName;
+        if (strstr($gf, "DAO")) {
+            $fileName = underscoreToCamelCase($tables[$i], true) . "DAO.php";
+        } else if (strstr($gf, "DTO")) {
+            $fileName = underscoreToCamelCase($tables[$i], true) . "DTO.php";
+        } else {
+            $fileName = underscoreToCamelCase($tables[$i], true) . ".php";
         }
-        ?> name="OJAS_O" id="enableDTO" value="O"><label class="descCrudLabel"></label><label>Enable DTO. Generates constructor, properties, getters and setters.</label><br>                    
-                        <input type="checkbox" <?php
-            if (!($OJAS_J == null && $OJAS_J_OFF)) {
-                echo "checked";
-            }
-            ?> name="OJAS_J" value="J" id="enableJSON"><label class="descCrudLabel">JSON</label><label>toJSONString() static method that returns a JSON string representation of the DTO instance</label><br>
-                        <input type="checkbox" <?php
-            if (!($OJAS_A == null && $OJAS_A_OFF)) {
-                echo "checked";
-            }
-            ?> name="OJAS_A" value="A" id="enableArray"><label class="descCrudLabel">Array</label><label>toArray() static method that returns a associative array representation of the DTO instance</label><br>
-                        <input type="checkbox" <?php
-            if (!($OJAS_S == null && $OJAS_S_OFF)) {
-                echo "checked";
-            }
-            ?> name="OJAS_S" value="S" id="enableString"><label class="descCrudLabel">String</label><label>toString() static method that returns a string representation of the DTO instance</label><br>
-                    </div><br>
-                    <button type="submit" name="generateDAOBtn" value="true">Generate DAO</button>
-                    <button type="submit" name="dlDAOBtn" value="true">Download DAO</button>
-                    <button type="submit" name="previewDAOBtn" value="true">Preview</button>
-                    <input type="hidden" name="CRUD_C_OFF" value=1></input>
-                    <input type="hidden" name="CRUD_R_OFF" value=1></input>
-                    <input type="hidden" name="CRUD_U_OFF" value=1></input>
-                    <input type="hidden" name="CRUD_D_OFF" value=1></input>
-                    <input type="hidden" name="CRUD_+_OFF" value=1></input>
-                    <input type="hidden" name="CRUD_CDTO_OFF" value=1></input>
-                    <input type="hidden" name="CRUD_RDTO_OFF" value=1></input>
-                    <input type="hidden" name="CRUD_UDTO_OFF" value=1></input>
-                    <input type="hidden" name="CRUD_DDTO_OFF" value=1></input>
-                    <input type="hidden" name="CRUD_+DTO_OFF" value=1></input>
-                    <input type="hidden" name="OJAS_O_OFF" value=1></input>
-                    <input type="hidden" name="OJAS_J_OFF" value=1></input>
-                    <input type="hidden" name="OJAS_A_OFF" value=1></input>
-                    <input type="hidden" name="OJAS_S_OFF" value=1></input>
-                    <input type="hidden" name="host" value="<?php echo $host; ?>"></input>
-                    <input type="hidden" name="login" value="<?php echo $login; ?>"></input>
-                    <input type="hidden" name="pwd" value="<?php echo $pwd; ?>"></input>
-                    <input type="hidden" name="selectedDb" value="<?php echo $selectedDb; ?>"></input>
-                    <input type="hidden" name="typeForm" value="tableSelectForm"></input>
-                </form>
-            </div>
-    <?php
-    if ($previewDAOBtn) {
-        ?>
-                <div class="bordered">
-                    <h3>Preview</h3>
-                    <textarea><?php echo DAOGenerator::generateDAO($pdo, $selectedDb, $selectedTables[0], $opts); ?></textarea>
+        generateFile($fileName, $gf);
+    }
+    echo 1;
+} else if ($requestType == "dl") {
+    require_once 'DAOGenerator.php';
+    if (file_exists("generatedFiles.zip")) {
+        unlink("generatedFiles.zip");
+    }
+    $max = count($tables);
+    for ($i = 0; $i < $max; $i++) {
+        $gf = DAOGenerator::generate($pdo, $dbName, $tables[$i], $options, $separateFiles);
+        $fileName;
+        if (strstr($gf, "DAO")) {
+            $fileName = underscoreToCamelCase($tables[$i], true) . "DAO.php";
+        } else if (strstr($gf, "DTO")) {
+            $fileName = underscoreToCamelCase($tables[$i], true) . "DTO.php";
+        } else {
+            $fileName = underscoreToCamelCase($tables[$i], true) . ".php";
+        }
+        zip($fileName, $gf);
+    }
+    echo 1;
+} else {
+    ?>
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>DAO Generator</title>
+            <style>
+                html{
+
+                }
+                body{        
+                    border: 0px solid red;
+                    text-align: left;
+
+                }
+                #connectionDiv{
+
+                }
+                #dbSelectionDiv{
+                    display:none;
+                }
+                #tableSelectionDiv{
+                    display:none;
+                }
+                #previewDiv{
+                    display:none;
+                }
+                #tableDiv{
+                    display:none;
+                }
+                #optionsDiv{
+                    display:none;
+                }
+                .descCrudLabel{
+                    display:inline-block;
+                    width:100px;
+                    border: 0px solid red;
+                }
+                #daoDiv{
+                    border: 1px solid black;
+                    display:inline-block;
+                    text-align: left;
+                    width:400px;
+                    height:230px;
+                }
+                #dtoDiv{
+                    border: 1px solid black;
+                    display:inline-block;
+                    text-align: left;
+                    width:400px;
+                    height:230px;
+                }
+                textarea{
+                    width:500px;
+                    height:600px;
+                    resize: none;
+                    white-space: pre;
+                }
+                h4{
+                    text-align: center;
+                    width:100%;
+                }
+                h5{
+                    display:inline-block;
+                    width:500px;
+                    border: 0px solid black;
+                }
+                #navBar{
+                    border: 0px solid black;
+                    width:250px;
+                    height: 100%;
+                    float: left;
+                    overflow: auto;
+                    text-align: center;
+                }
+                #main{
+                    border: 0px solid pink;
+                    min-width: 1000px;
+                    text-align: center;
+                    height: 100%;
+                    overflow: auto;
+                }
+                #mainContainer{
+                    min-width: 1350px;
+                    overflow: auto;
+                }
+
+            </style>
+        </head>
+        <body>
+            <div id="mainContainer">
+                <div id="navBar"></div><div id="main">
+                    <h1 id="mainHeader">PHP DAO and DTO Generator for MySQL</h1>
+                    <div id="connectionDiv">
+                        <h3>MySQL connection</h3>
+                        <form method="post">
+                            <label>Host&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</label> <input type="text" id="host" name="host" value="localhost" required><br>
+                            <label>Login&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</label> <input type="text" id="login" name="login" value="root" required><br>
+                            <label>Password&nbsp;:</label> <input type="password" id="pwd" name="pwd" value=""><br>
+                            <button id="connectBtn">Connect</button>
+                        </form>
+                    </div>
+
+                    <div id="dbSelectionDiv">
+                        <h3>Select a database</h3>
+                        <form method="post">
+                            <select name="selectedDb"  required>
+                            </select>
+                            <button id="dbSelectBtn">Select</button>
+                        </form>
+                    </div>
+                    <div id="tableSelectionDiv">
+                        <h3>Select tables</h3>
+                        <form method="post">
+                            <select multiple size="20" required>
+                            </select><br>
+                            <button id="connectBtn">Select</button>
+                        </form>
+                    </div>
+                    <div id="optionsDiv">
+                        <h3>Select options for the file generation</h3>
+                        <div id="daoDiv">
+                            <h4>DAO</h4>
+                            <input type="checkbox" name="enableDAO" value="A" id="enableDAO" checked><label for="enableDAO" class="descCrudLabel">DAO</label><br><br><br>
+                            <input type="checkbox" name="enableC" value="C" id="enableC" checked><label for="enableC" class="descCrudLabel">Create</label><input type="checkbox" name="enableCDTO" value="1" id="enableCDTO" checked><label for="enableCDTO">receive DTO instance for argument</label><br>
+                            <input type="checkbox" name="enableR" value="R" id="enableR" checked><label for="enableR" class="descCrudLabel">Read</label><input type="checkbox" name="enableRDTO" value="2" id="enableRDTO" checked><label for="enableRDTO">return DTO instances array</label><br>
+                            <input type="checkbox" name="enableU" value="U" id="enableU" checked><label for="enableU" class="descCrudLabel">Update</label><input type="checkbox" name="enableUDTO" value="3" id="enableUDTO" checked><label for="enableUDTO">receive DTO instance for argument</label><br>
+                            <input type="checkbox" name="enableD" value="D" id="enableD" checked><label for="enableD" class="descCrudLabel">Delete</label><input type="checkbox" name="enableDDTO" value="4" id="enableDDTO" checked><label for="enableDDTO">receive DTO instance for argument</label><br>
+                            <input type="checkbox" name="enablePLUS" value="+" id="enablePLUS"><label for="enablePLUS" class="descCrudLabel">ReadOne</label><input type="checkbox" name="enablePLUSDTO" value="5" id="enablePLUSDTO" checked><label for="enablePLUSDTO">return DTO instance</label>
+                        </div>
+                        <div id="dtoDiv">
+                            <h4>DTO</h4>
+                            <input type="checkbox" name="enableDTO" value="O" id="enableDTO"  checked><label for="enableDTO" class="descCrudLabel">DTO</label><br><br><br>
+                            <input type="checkbox" name="enableJSON" value="J" id="enableJSON" checked><label for="enableJSON" class="descCrudLabel">toJSON()</label><br>
+                            <input type="checkbox" name="enableArray" value="A" id="enableArray" checked><label for="enableArray" class="descCrudLabel">toArray()</label><br>
+                            <input type="checkbox" name="enableString" value="S" id="enableString" checked><label for="enableString" class="descCrudLabel">toString()</label><br><br><br>
+                        </div>
+                        <br><br>
+                        <input type="checkbox" name="enableAR" value="AR" id="enableAR" checked><label for="enableAR">Active Record pattern (DTO and static DAO in the same class)</label>
+                        <br><br>
+                        <button type="button" name="generateBtn" id="generateBtn" value="true">Generate files on the server</button>
+                        <button type="button" name="dlBtn" id="dlBtn" value="true">Generate files and download</button>
+                        <h3>Preview</h3>
+                        <h5 id="headerDAO">.php</h5><h5 id="headerDTO">.php</h5><br>
+                        <textarea readonly id="textareaDAO"></textarea>
+                        <textarea readonly id="textareaDTO"></textarea>
+                    </div>
                 </div>
-        <?php
-    }
+            </div>
+            <script type="text/javascript">
+                var connectionForm = document.querySelector("#connectionDiv form");
+                var dbForm = document.querySelector("#dbSelectionDiv form");
+                var tableForm = document.querySelector("#tableSelectionDiv form");
+                var hostStr;
+                var loginStr;
+                var pwdStr;
+                var dbStr;
+                var tables = [];
+                connectionForm.addEventListener("submit", function (e) {
+                    e.preventDefault();
+                    hostStr = host.value;
+                    loginStr = login.value;
+                    pwdStr = pwd.value;
+                    let xhr = new XMLHttpRequest();
+                    xhr.onreadystatechange = function (event) {
+                        if (this.readyState === XMLHttpRequest.DONE) {
+                            if (this.status === 200) {
+                                var data = JSON.parse(this.responseText);
+                                dbSelectionDiv.querySelector("select").innerHTML = "";
+                                for (let k in data) {
+                                    dbSelectionDiv.querySelector("select").innerHTML += "<option value='" + data[k] + "'>" + data[k] + "</option>";
+                                }
+                                //connectionDiv.style.position = "absolute";
+                                navBar.appendChild(connectionDiv);
+                                //connectionDiv.style.left = "0px";
+                                //connectionDiv.style.top = "0px";
+                                dbSelectionDiv.style.display = "block";console.log(main.childNodes[6]);
+                                main.insertBefore(optionsDiv, mainHeader.nextSibling);
+                                main.insertBefore(tableSelectionDiv, mainHeader.nextSibling);
+                                main.insertBefore(dbSelectionDiv, mainHeader.nextSibling);
+                                tableSelectionDiv.style.display = "none";
+                                optionsDiv.style.display = "none";
+                                //dbSelectionDiv.style.position = "";
+                                
+                            } else {
+                                console.log("ajax error");
+                            }
+                        }
+                    };
+                    xhr.open('POST', 'index.php', true);
+                    let formData = new FormData();
+                    formData.append('requestType', 'connection');
+                    formData.append('host', hostStr);
+                    formData.append('login', loginStr);
+                    formData.append('pwd', pwdStr);
+                    xhr.send(formData);
+                });
+                dbForm.addEventListener("submit", function (e) {
+                    e.preventDefault();
+                    dbStr = dbSelectionDiv.querySelector("select").value;
+                    let xhr = new XMLHttpRequest();
+                    xhr.onreadystatechange = function (event) {
+                        if (this.readyState === XMLHttpRequest.DONE) {
+                            if (this.status === 200) {
+                                var data = JSON.parse(this.responseText);
+                                tableSelectionDiv.querySelector("select").innerHTML = "";
+                                for (let k in data) {
+                                    tableSelectionDiv.querySelector("select").innerHTML += "<option value='" + data[k] + "'>" + data[k] + "</option>";
+                                }
+                                dbSelectionDiv.style.position = "absolute";
+                                dbSelectionDiv.style.left = "20px";
+                                dbSelectionDiv.style.top = "160px";
+                                tableSelectionDiv.style.display = "block";
+                                tableSelectionDiv.style.display = "block";
+                                tableSelectionDiv.style.position = "";
+                                optionsDiv.style.display = "none";
+                            } else {
+                                console.log("ajax error");
+                            }
+                        }
+                    };
+                    xhr.open('POST', 'index.php', true);
+                    let formData = new FormData();
+                    formData.append('requestType', 'dbSelection');
+                    formData.append('host', hostStr);
+                    formData.append('login', loginStr);
+                    formData.append('pwd', pwdStr);
+                    formData.append('dbName', dbStr);
+                    xhr.send(formData);
+                });
+                tableForm.addEventListener("submit", function (e) {
+                    e.preventDefault();
+                    tables = [];
+                    var tempTables = tableSelectionDiv.querySelector("select").selectedOptions;
+                    for (var i = 0; i < tempTables.length; i++) {
+                        tables.push(tempTables[i].value);
+                    }
+                    tableSelectionDiv.style.position = "absolute";
+                    tableSelectionDiv.style.left = "45px";
+                    tableSelectionDiv.style.top = "230px";
+                    optionsDiv.style.display = "block";
+                    resetOptions();
+                    getPreview();
+                });
+                generateBtn.addEventListener("click", function (e) {
+                    let xhr = new XMLHttpRequest();
+                    xhr.onreadystatechange = function (event) {
+                        if (this.readyState === XMLHttpRequest.DONE) {
+                            if (this.status === 200) {
+                                console.log(this.responseText);
+                            } else {
+                                console.log("ajax error");
+                            }
+                        }
+                    };
+                    xhr.open('POST', 'index.php', true);
+                    let formData = new FormData();
+                    formData.append('requestType', 'generate');
+                    formData.append('host', hostStr);
+                    formData.append('login', loginStr);
+                    formData.append('pwd', pwdStr);
+                    formData.append('dbName', dbStr);
+                    formData.append('tables', JSON.stringify(tables));
+                    formData.append('options', getOptionString());
+                    var boolToInt = 1;
+                    if (enableAR.checked)
+                        boolToInt = 0;
+                    formData.append('separateFiles', boolToInt);
+                    xhr.send(formData);
+                });
+                dlBtn.addEventListener("click", function (e) {
+                    let xhr = new XMLHttpRequest();
+                    xhr.onreadystatechange = function (event) {
+                        if (this.readyState === XMLHttpRequest.DONE) {
+                            if (this.status === 200) {
+                                var dlLink = document.createElement("A");
+                                dlLink.href = "generatedFiles.zip";
+                                dlLink.setAttribute("download", "");
+                                document.body.appendChild(dlLink);
+                                dlLink.click();
+                                document.body.removeChild(dlLink);
+                            } else {
+                                console.log("ajax error");
+                            }
+                        }
+                    };
+                    xhr.open('POST', 'index.php', true);
+                    let formData = new FormData();
+                    formData.append('requestType', 'dl');
+                    formData.append('host', hostStr);
+                    formData.append('login', loginStr);
+                    formData.append('pwd', pwdStr);
+                    formData.append('dbName', dbStr);
+                    formData.append('tables', JSON.stringify(tables));
+                    formData.append('options', getOptionString());
+                    var boolToInt = 1;
+                    if (enableAR.checked)
+                        boolToInt = 0;
+                    formData.append('separateFiles', boolToInt);
+                    xhr.send(formData);
+                });
+                var cbs = document.querySelectorAll("#optionsDiv input");
+                for (var i = 0; i < cbs.length; i++) {
+                    cbs[i].addEventListener("change", function (e) {
+                        updateOptions();
+                    });
+                }
+
+                function updateOptions() {
+                    enableC.disabled = enableR.disabled = enableU.disabled = enableD.disabled = enablePLUS.disabled = !enableDAO.checked;
+                    enableJSON.disabled = enableArray.disabled = enableString.disabled = !enableDTO.checked;
+                    if (!enableDAO.checked || !enableDTO.checked) {
+                        enableCDTO.disabled = enableRDTO.disabled = enableUDTO.disabled = enableDDTO.disabled = enablePLUSDTO.disabled = true;
+                    } else {
+                        enableCDTO.disabled = enableRDTO.disabled = enableUDTO.disabled = enableDDTO.disabled = enablePLUSDTO.disabled = false;
+                    }
+                    getPreview();
+                }
+                function resetOptions() {
+                    var cbs = document.querySelectorAll("#optionsDiv input");
+                    for (var i = 0; i < cbs.length; i++) {
+                        cbs[i].checked = true;
+                        cbs[i].disabled = false;
+                    }
+                }
+                function getPreview() {
+                    let xhr = new XMLHttpRequest();
+                    xhr.onreadystatechange = function (event) {
+                        if (this.readyState === XMLHttpRequest.DONE) {
+                            if (this.status === 200) {
+                                if (this.responseText[0] === "[") {
+                                    var jsonArray = JSON.parse(this.responseText);
+                                    textareaDAO.style.display = "inline-block";
+                                    headerDAO.style.display = "inline-block";
+                                    headerDTO.innerHTML = camelize(tables[0], "_") + "DTO.php";
+                                    headerDAO.innerHTML = camelize(tables[0], "_") + "DAO.php";
+                                    textareaDAO.innerHTML = jsonArray[0];
+                                    textareaDTO.innerHTML = jsonArray[1];
+                                } else {
+                                    textareaDAO.style.display = "none";
+                                    headerDAO.style.display = "none";
+                                    headerDTO.innerHTML = camelize(tables[0]) + ".php";
+                                    textareaDTO.innerHTML = this.responseText;
+                                }
+
+                            } else {
+                                console.log("ajax error");
+                            }
+                        }
+                    };
+                    xhr.open('POST', 'index.php', true);
+                    let formData = new FormData();
+                    formData.append('requestType', 'preview');
+                    formData.append('host', hostStr);
+                    formData.append('login', loginStr);
+                    formData.append('pwd', pwdStr);
+                    formData.append('dbName', dbStr);
+                    formData.append('tableName', tables[0]);
+                    formData.append('options', getOptionString());
+                    var boolToInt = 1;
+                    if (enableAR.checked)
+                        boolToInt = 0;
+                    formData.append('separateFiles', boolToInt);
+                    xhr.send(formData);
+                }
+                function getOptionString() {
+                    var optInputs = [enableC, enableR, enableU, enableD, enablePLUS, enableDTO, enableJSON, enableArray, enableString, enableCDTO, enableRDTO, enableUDTO, enableDDTO, enablePLUSDTO];
+                    var str = "";
+                    for (var i = 0; i < optInputs.length; i++) {
+                        if (!optInputs[i].disabled && optInputs[i].checked) {
+                            str += optInputs[i].value;
+                        }
+                    }
+                    return(str);
+                }
+                function camelize(text, separator) {
+
+                    // Assume separator is _ if no one has been provided.
+                    if (typeof (separator) === "undefined") {
+                        separator = "_";
+                    }
+
+                    // Cut the string into words
+                    var words = text.split(separator);
+
+                    // Concatenate all capitalized words to get camelized string
+                    var result = "";
+                    for (var i = 0; i < words.length; i++) {
+                        var word = words[i];
+                        var capitalizedWord = word.charAt(0).toUpperCase() + word.slice(1);
+                        result += capitalizedWord;
+                    }
+
+                    return result;
+
+                }
+            </script>
+        </body>
+    </html>
+    <?php
 }
-?>
-        <script type="text/javascript">
-            CRUDC.addEventListener("change", function (e) {
-                if(!e.target.checked){CDTO.disabled = true;}
-                else if(enableDTO.checked){CDTO.disabled = false;}
-            });
-            CRUDR.addEventListener("change", function (e) {
-                if(!e.target.checked){RDTO.disabled = true;}
-                else if(enableDTO.checked){RDTO.disabled = false;}
-            });
-            CRUDU.addEventListener("change", function (e) {
-                if(!e.target.checked){UDTO.disabled = true;}
-                else if(enableDTO.checked){UDTO.disabled = false;}
-            });
-            CRUDD.addEventListener("change", function (e) {
-                if(!e.target.checked){DDTO.disabled = true;}
-                else if(enableDTO.checked){DDTO.disabled = false;}
-            });
-            CRUDPLUS.addEventListener("change", function (e) {
-                if(!e.target.checked){PLUSDTO.disabled = true;}
-                else if(enableDTO.checked){PLUSDTO.disabled = false;}
-            });
-            
-            enableDTO.addEventListener("click", function (e) {
-                document.getElementById("enableJSON").disabled = document.getElementById("enableArray").disabled = document.getElementById("enableString").disabled = !e.currentTarget.checked;
-                if (!e.currentTarget.checked){
-                    CDTO.disabled = RDTO.disabled = UDTO.disabled = DDTO.disabled = PLUSDTO.disabled = true;
-                    CDTO.checked = false;CDTO.previousSibling.innerHTML = "insert($pdo, $nonAIparams, ...) static method that inserts a new line in table from non-ai columns values";
-                    RDTO.checked = false;RDTO.previousSibling.innerHTML = "selectAll($pdo) static method that selects all columns from all lines in table and returns an array of associatives arrays";
-                    UDTO.checked = false;UDTO.previousSibling.innerHTML = "update($pdo, $primaryParams, ...) static method that updates non-ai values of a line in table from primary columns values";
-                    DDTO.checked = false;DDTO.previousSibling.innerHTML = "delete($pdo, $primaryParams, ...) static method that deletes a line in table from primary columns values";
-                    PLUSDTO.checked = false;PLUSDTO.previousSibling.innerHTML = "selectOne($pdo, $primaryValues, ...) static method that selects a line in table from primary columns values and returns an associative array";
-                }
-                else {
-                    if (CRUDC.checked)
-                        CDTO.disabled = false;
-                    if (CRUDR.checked)
-                        RDTO.disabled = false;
-                    if (CRUDU.checked)
-                        UDTO.disabled = false;
-                    if (CRUDD.checked)
-                        DDTO.disabled = false;
-                    if (CRUDPLUS.checked)
-                        PLUSDTO.disabled = false;
-                }
-            });
-        </script>
-    </body>
-</html>
-<?php
 
 function getBases(PDO $pdo) {
     $dbList = array();
@@ -386,11 +493,9 @@ function getTables(PDO $pdo, $dbName) {
 
 function zip($fileName, $fileContent) {
     $zip = new ZipArchive();
-
-    if ($zip->open("./temp.zip", ZipArchive::CREATE) !== TRUE) {
-        exit("Impossible d'ouvrir le fichier <./temp.zip>\n");
+    if ($zip->open("./generatedFiles.zip", ZipArchive::CREATE) !== TRUE) {
+        exit("Impossible d'ouvrir le fichier <./$fileName>\n");
     }
-
     $zip->addFromString($fileName, $fileContent);
     $zip->close();
 }
@@ -409,4 +514,23 @@ function underscoreToCamelCase($string, $capitalizeFirstCharacter = false) {
         $str[0] = strtolower($str[0]);
     }
     return $str;
+}
+
+function generateFile($fileName, $str) {
+    if (!file_exists("generatedFiles")) {
+        mkdir("generatedFiles");
+    }
+    file_put_contents("generatedFiles/" . $fileName, $str);
+}
+
+function connect($host, $login, $pwd) {
+    try {
+
+        $pdo = new PDO("mysql:host=" . $host, $login, $pwd);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec("SET NAMES 'UTF8'");
+        return($pdo);
+    } catch (PDOException $e) {
+        echo($e->getMessage());
+    }
 }

@@ -3,13 +3,13 @@
 ### Basic usage:<br>
 Only one static method :<br>
 <br>
-DAOGenerator::generateDAO($pdo, $dbName, $tableName, $options = "CRUD+OJAS12345")
+DAOGenerator::generate($pdo, $dbName, $tableName, $options = "CRUD+OJAS12345")
 
 Parameters: 
-- $pdo : Un objet PDO déjà connecté à votre base de données MySQL
-- $dbName : Le nom de votre base de données sous forme de chaine
-- $tableName : Le nom de votre table sous forme de chaine
-- $options : Les options à utiliser pour la génération de fichier sous forme de chaine formée des caractères suivants:<br>
+- $pdo : A connected PDO object
+- $dbName : The database name
+- $tableName : The table name
+- $options : The options to use for files generation in a string composed by the following allowed characters:<br>
     * C : Generates a static insert method (CREATE)
     * R : Generates a static selectAll method (READ)
     * U : Generates an static update method (UPDATE)
@@ -24,3 +24,7 @@ Parameters:
     * 3 : The update method will get DTO as parameter instead of values
     * 4 : The delete method will get DTO as parameter instead of values
     * 5 : The selectOne method will return a DTO instead of values
+- $activeRecord : Instantiable DTO and static DAO into the same class and file
+
+Returned values:
+Will return a string containing the generated class or an array of two strings containing the generated DAO and DTO classes in that order depending on the activeRecord parameter and the selected options
