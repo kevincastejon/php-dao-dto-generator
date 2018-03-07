@@ -75,7 +75,7 @@ class DAODTOGenerator {
             $dao .= DAODTOGenerator::tab() . "public static function selectAll(\$pdo) {" . DAODTOGenerator::lineBreak();
             $dao .= DAODTOGenerator::tab(2) . "try {" . DAODTOGenerator::lineBreak();
             $dao .= DAODTOGenerator::tab(3) . '$sql = "SELECT * FROM ' . $dbName . '.' . $tableName . '";' . DAODTOGenerator::lineBreak();
-            $dao .= DAODTOGenerator::tab(3) . '$cursor = $pdo()->query($sql);' . DAODTOGenerator::lineBreak();
+            $dao .= DAODTOGenerator::tab(3) . '$cursor = $pdo->query($sql);' . DAODTOGenerator::lineBreak();
             $dao .= DAODTOGenerator::tab(3) . '$cursor->setFetchMode(PDO::FETCH_ASSOC);' . DAODTOGenerator::lineBreak();
             $dao .= DAODTOGenerator::tab(3) . '$ret = $cursor->fetchAll();' . DAODTOGenerator::lineBreak();
             $dao .= DAODTOGenerator::tab(3) . 'if ($ret == false) {' . DAODTOGenerator::lineBreak();
