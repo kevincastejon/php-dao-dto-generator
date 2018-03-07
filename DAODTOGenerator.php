@@ -203,7 +203,7 @@ class DAODTOGenerator {
         $str = "";
         $max = count($cols);
         for ($i = 0; $i < $max; $i++) {
-            $str .= '$ret["' . DAODTOGenerator::underscoreToCamelCase($cols[$i]) . '"], ';
+            $str .= '$ret[$i]["' . $cols[$i] . '"], ';
         }
         $str = substr($str, 0, strlen($str) - 2);
         return($str);
